@@ -1,0 +1,9 @@
+remotion-renderer/node_modules/
+strapi-backend/node_modules/
+
+# Cache and temp files
+.cache/
+sized/
+thumbs/
+_thumbs/
+*/expressionengine/cache/*

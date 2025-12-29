@@ -1,0 +1,44 @@
+{
+    "kind": "collectionType",
+    "collectionName": "animation_contents",
+    "info": {
+        "singularName": "animation-content",
+        "pluralName": "animation-contents",
+        "displayName": "AnimationContent"
+    },
+    "options": {
+        "draftAndPublish": true
+    },
+    "pluginOptions": {},
+    "attributes": {
+        "title": {
+            "type": "string"
+        },
+        "props": {
+            "type": "json"
+        },
+        "renderStatus": {
+            "type": "enumeration",
+            "enum": [
+                "false",
+                "true"
+            ]
+        },
+        "renderVideo": {
+            "type": "media",
+            "multiple": true,
+            "allowedTypes": [
+                "images",
+                "files",
+                "videos",
+                "audios"
+            ]
+        },
+        "animation_template": {
+            "type": "relation",
+            "relation": "oneToOne",
+            "target": "api::animation-template.animation-template",
+            "inversedBy": "animation_content"
+        }
+    }
+}
