@@ -3,6 +3,11 @@ strapi-backend/node_modules/
 strapi-backend/.strapi/
 strapi-backend/.tmp/
 strapi-backend/dist/*
+strapi-backend/dist/
+
+# Build output
+dist/
+**/dist/
 
 # Cache and temp files
 .cache/
