@@ -16,10 +16,10 @@
     },
     "slug": {
       "type": "uid",
-      "targetField": ""
+      "targetField": "name"
     },
     "remotionComponent": {
-      "type": "text"
+      "type": "string"
     },
     "fps": {
       "type": "integer"
@@ -32,7 +32,7 @@
     },
     "previewCover": {
       "type": "media",
-      "multiple": true,
+      "multiple": false,
       "allowedTypes": [
         "images",
         "files",
@@ -40,11 +40,11 @@
         "audios"
       ]
     },
-    "animation_content": {
+    "contents": {
       "type": "relation",
-      "relation": "oneToOne",
+      "relation": "oneToMany",
       "target": "api::animation-content.animation-content",
-      "mappedBy": "animation_template"
+      "mappedBy": "template"
     }
   }
 }

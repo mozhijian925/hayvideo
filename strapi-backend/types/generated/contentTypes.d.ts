@@ -507,11 +507,6 @@ export interface ApiAnimationContentAnimationContent
     draftAndPublish: true;
   };
   attributes: {
-    animation_template: Attribute.Relation<
-      'api::animation-content.animation-content',
-      'oneToOne',
-      'api::animation-template.animation-template'
-    >;
     createdAt: Attribute.DateTime;
     createdBy: Attribute.Relation<
       'api::animation-content.animation-content',
@@ -521,10 +516,14 @@ export interface ApiAnimationContentAnimationContent
       Attribute.Private;
     props: Attribute.JSON;
     publishedAt: Attribute.DateTime;
-    renderStatus: Attribute.Enumeration<['false', 'true']>;
-    renderVideo: Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
+    renderStatus: Attribute.Enumeration<['waiting', 'rendering', 'done']>;
+    renderVideo: Attribute.Media<'videos'>;
+    status: Attribute.Enumeration<['draft', 'published']> &
+      Attribute.DefaultTo<'draft'>;
+    template: Attribute.Relation<
+      'api::animation-content.animation-content',
+      'manyToOne',
+      'api::animation-template.animation-template'
     >;
     title: Attribute.String;
     updatedAt: Attribute.DateTime;
@@ -549,9 +548,9 @@ export interface ApiAnimationTemplateAnimationTemplate
     draftAndPublish: true;
   };
   attributes: {
-    animation_content: Attribute.Relation<
+    contents: Attribute.Relation<
       'api::animation-template.animation-template',
-      'oneToOne',
+      'oneToMany',
       'api::animation-content.animation-content'
     >;
     createdAt: Attribute.DateTime;
@@ -564,14 +563,11 @@ export interface ApiAnimationTemplateAnimationTemplate
     duration: Attribute.Integer;
     fps: Attribute.Integer;
     name: Attribute.String;
-    previewCover: Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
+    previewCover: Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
     publishedAt: Attribute.DateTime;
-    remotionComponent: Attribute.Text;
+    remotionComponent: Attribute.String;
     schema: Attribute.JSON;
-    slug: Attribute.UID<'api::animation-template.animation-template', ''>;
+    slug: Attribute.UID<'api::animation-template.animation-template', 'name'>;
     updatedAt: Attribute.DateTime;
     updatedBy: Attribute.Relation<
       'api::animation-template.animation-template',

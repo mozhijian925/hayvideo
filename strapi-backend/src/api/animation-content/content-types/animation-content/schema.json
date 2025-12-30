@@ -14,31 +14,37 @@
     "title": {
       "type": "string"
     },
+    "template": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::animation-template.animation-template",
+      "inversedBy": "contents"
+    },
     "props": {
       "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "draft",
+        "published"
+      ],
+      "default": "draft"
     },
     "renderStatus": {
       "type": "enumeration",
       "enum": [
-        "false",
-        "true"
+        "waiting",
+        "rendering",
+        "done"
       ]
     },
     "renderVideo": {
       "type": "media",
-      "multiple": true,
+      "multiple": false,
       "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
+        "videos"
       ]
-    },
-    "animation_template": {
-      "type": "relation",
-      "relation": "oneToOne",
-      "target": "api::animation-template.animation-template",
-      "inversedBy": "animation_content"
     }
   }
 }
