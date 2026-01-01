@@ -3,6 +3,8 @@ import { Composition } from "remotion";
 import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { MySimpleAnimation } from "./HelloWorld/MySimpleAnimation";
+import { VideoAd } from "./VideoAd";
+import { TextIssues, computeTextIssuesDuration } from "./TextIssues";
 
 // Each <Composition> is an entry in the sidebar!
 
@@ -28,7 +30,6 @@ export const RemotionRoot: React.FC = () => {
           logoColor2: "#86A8E7",
         }}
       />
-
       {/* Mount any React component to make it show up in the sidebar and work on it individually! */}
       <Composition
         id="OnlyLogo"
@@ -50,6 +51,15 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1280}
         height={720}
+      />
+
+      <Composition
+        id="TextIssues"
+        component={TextIssues}
+        durationInFrames={computeTextIssuesDuration()}
+        fps={30}
+        width={1080}
+        height={1920}
       />
     </>
   );
