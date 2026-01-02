@@ -3,7 +3,7 @@ import { Composition } from "remotion";
 import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { MySimpleAnimation } from "./HelloWorld/MySimpleAnimation";
-import { TextIssues, computeTextIssuesDuration } from "./TextIssues";
+import { TextIssues, computeTextIssuesDuration, textIssuesSchema } from "./TextIssues";
 import { NewCopyAnimation } from './NewCopyAnimation';
 import { MagicThreeAnimation } from './MagicThreeAnimation';
 import { MercedesSteps } from './MercedesSteps';
@@ -63,6 +63,21 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
+        schema={textIssuesSchema}
+        defaultProps={{
+          lines: [
+            '二手奔驰原车主没解绑',
+            'Mercedes me 账户？',
+            '车机用户名删不掉？',
+          ],
+          fontSize: 66,
+          lineGap: 16,
+          bgColor: '#071022',
+          audioOffsetSec: 0,
+          audioFile: 'static/audio/speech.mp3',
+          logoImage: 'static/images/mercedes-benz-logo.png',
+          appImage: 'static/images/benz-app.jpg',
+        }}
       />
       <Composition
         id="NewCopyAnimation"

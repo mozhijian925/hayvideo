@@ -1,4 +1,5 @@
 import React from "react";
+import {z} from "zod";
 import {AbsoluteFill, useCurrentFrame, interpolate, staticFile, Img, Audio, Sequence} from "remotion";
 
 const lineStyle: React.CSSProperties = {
@@ -15,6 +16,20 @@ export const RAW_TEXT_LINES = [
   "手机APP远程控制用不了？",
   "想联系对方还查无此人？",
 ];
+
+export const textIssuesSchema = z.object({
+  lines: z.array(z.string()).optional(),
+  fps: z.number().optional(),
+  lineDurSec: z.number().optional(),
+  overlapSec: z.number().optional(),
+  fontSize: z.number().optional(),
+  lineGap: z.number().optional(),
+  bgColor: z.string().optional(),
+  audioOffsetSec: z.number().optional(),
+  audioFile: z.string().optional(),
+  logoImage: z.string().optional(),
+  appImage: z.string().optional(),
+});
 
 export const computeTextIssuesDuration = (opts?: {
   lines?: string[];
@@ -67,10 +82,22 @@ export const computeTextIssuesDuration = (opts?: {
 // Project-wide fixed total for TextIssues (10.5s @ 30fps)
 export const TEXT_ISSUES_TOTAL_FRAMES = 330;
 
-export const TextIssues: React.FC = () => {
+export const TextIssues: React.FC<z.infer<typeof textIssuesSchema>> = ({
+  lines: propLines,
+  fps: propFps,
+  lineDurSec: propLineDurSec,
+  overlapSec: propOverlapSec,
+  fontSize: propFontSize,
+  lineGap: propLineGap,
+  bgColor: propBgColor,
+  audioOffsetSec: propAudioOffsetSec,
+  audioFile: propAudioFile,
+  logoImage: propLogoImage,
+  appImage: propAppImage,
+}) => {
   const frame = useCurrentFrame();
 
-  const rawLines = RAW_TEXT_LINES;
+  const rawLines = propLines ?? RAW_TEXT_LINES;
 
   // Split each raw line by punctuation (keep punctuation at end of segment)
   const splitByPunctuation = (s: string) => {
@@ -82,11 +109,12 @@ export const TextIssues: React.FC = () => {
 
   const lines = rawLines.flatMap((r) => splitByPunctuation(r));
 
-  const fps = 30;
-  const lineDurSec = 2.0;
-  const overlapSec = 0.4;
-  const fontSize = 70; // px used in render
-  const lineGap = 18; // marginTop between lines
+  const fps = propFps ?? 30;
+  const lineDurSec = propLineDurSec ?? 2.0;
+  const overlapSec = propOverlapSec ?? 0.4;
+  const fontSize = propFontSize ?? 70; // px used in render
+  const lineGap = propLineGap ?? 18; // marginTop between lines
+  const bgColor = propBgColor ?? '#0b1220';
   const textBlockHeight = lines.length * fontSize + Math.max(0, lines.length - 1) * lineGap;
 
   const renderLine = (text: string, index: number) => {
@@ -119,7 +147,7 @@ export const TextIssues: React.FC = () => {
                     style={{
                       transform: `translateY(${y}px) scale(${scale}) rotate(${rotate}deg)`,
                       opacity,
-                      fontSize: 70,
+                      fontSize,
                       ...lineStyle,
                       whiteSpace: 'pre',
                       textShadow: `${glow}, 0 6px 18px rgba(0,0,0,0.25)`,
@@ -136,27 +164,28 @@ export const TextIssues: React.FC = () => {
   };
 
   return (
-    <AbsoluteFill style={{background: '#0b1220', alignItems: 'center', justifyContent: 'center'}}>
+    <AbsoluteFill style={{background: bgColor, alignItems: 'center', justifyContent: 'center'}}>
       {/* Play narration/audio from public/static/audio/speech.mp3 */}
       {/* If audio is out of sync, adjust AUDIO_OFFSET_SEC to delay/advance audio start */}
       {(() => {
-        const AUDIO_OFFSET_SEC = 0; // set negative to start earlier, positive to delay (seconds)
-        const AUDIO_OFFSET_FRAMES = Math.round(AUDIO_OFFSET_SEC * 30);
+        const AUDIO_OFFSET_SEC = propAudioOffsetSec ?? 0; // set negative to start earlier, positive to delay (seconds)
+        const AUDIO_OFFSET_FRAMES = Math.round(AUDIO_OFFSET_SEC * fps);
+        const audioPath = propAudioFile ?? 'static/audio/speech.mp3';
         if (AUDIO_OFFSET_FRAMES === 0) {
-          return <Audio src={staticFile('static/audio/speech.mp3')} />;
+          return <Audio src={staticFile(audioPath)} />;
         }
         return (
           <Sequence from={AUDIO_OFFSET_FRAMES}>
-            <Audio src={staticFile('static/audio/speech.mp3')} />
+            <Audio src={staticFile(audioPath)} />
           </Sequence>
         );
       })()}
       {/* Logo positioned above the text block (use computed textBlockHeight) */}
       <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 3}}>
-        <div style={{position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 900, height: 900, transform: `translateY(-${Math.round(textBlockHeight / 2 + 280)}px)`}}>
+          <div style={{position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 900, height: 900, transform: `translateY(-${Math.round(textBlockHeight / 2 + 280)}px)`}}>
           <div style={{position: 'absolute', width: 820, height: 820, borderRadius: 9999, background: 'radial-gradient(circle, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 35%, rgba(255,255,255,0.0) 60%)', filter: 'blur(18px)'}} />
           <Img
-            src={staticFile('static/images/mercedes-benz-logo.png')}
+            src={staticFile(propLogoImage ?? 'static/images/mercedes-benz-logo.png')}
             style={{
               width: 700,
               height: 700,
