@@ -3,8 +3,11 @@ import { Composition } from "remotion";
 import { HelloWorld, myCompSchema } from "./HelloWorld";
 import { Logo, myCompSchema2 } from "./HelloWorld/Logo";
 import { MySimpleAnimation } from "./HelloWorld/MySimpleAnimation";
-import { VideoAd } from "./VideoAd";
 import { TextIssues, computeTextIssuesDuration } from "./TextIssues";
+import { NewCopyAnimation } from './NewCopyAnimation';
+import { MagicThreeAnimation } from './MagicThreeAnimation';
+import { MercedesSteps } from './MercedesSteps';
+import { CombinedAnimation } from './CombinedAnimation';
 
 // Each <Composition> is an entry in the sidebar!
 
@@ -56,7 +59,39 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="TextIssues"
         component={TextIssues}
-        durationInFrames={computeTextIssuesDuration()}
+        durationInFrames={330}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="NewCopyAnimation"
+        component={NewCopyAnimation}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="MagicThreeAnimation"
+        component={MagicThreeAnimation}
+        durationInFrames={75}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="MercedesSteps"
+        component={MercedesSteps}
+        durationInFrames={480}
+        fps={30}
+        width={1080}
+        height={1920}
+      />
+      <Composition
+        id="CombinedAnimation"
+        component={CombinedAnimation}
+        durationInFrames={330 + 75 + 480}
         fps={30}
         width={1080}
         height={1920}

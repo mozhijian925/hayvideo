@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, useCurrentFrame, interpolate} from "remotion";
+import {AbsoluteFill, useCurrentFrame, interpolate, staticFile, Img, Audio, Sequence} from "remotion";
 
 const lineStyle: React.CSSProperties = {
   color: '#ffffff',
@@ -24,16 +24,23 @@ export const computeTextIssuesDuration = (opts?: {
   staggerFrames?: number;
   enterEndFrames?: number;
   marginFrames?: number;
+  // when true, return the project's fixed default total (TEXT_ISSUES_TOTAL_FRAMES)
+  forceDefault?: boolean;
 }) => {
   const {
     lines = RAW_TEXT_LINES,
     fps = 30,
-    lineDurSec = 3.0,
-    overlapSec = 0.6,
-    staggerFrames = 4,
-    enterEndFrames = 20,
+    lineDurSec = 2.0,
+    overlapSec = 0.4,
+    staggerFrames = 3,
+    enterEndFrames = 12,
     marginFrames = 10,
   } = opts || {};
+
+  // If caller explicitly requests the fixed project default, return it.
+  if (opts && opts.forceDefault) {
+    return TEXT_ISSUES_TOTAL_FRAMES;
+  }
 
   const splitByPunctuationLocal = (s: string) => {
     const re = /([^，。！？；：,.!?:;]+[，。！？；：,.!?:;]?)/g;
@@ -57,6 +64,9 @@ export const computeTextIssuesDuration = (opts?: {
   return maxFrame + marginFrames;
 };
 
+// Project-wide fixed total for TextIssues (10.5s @ 30fps)
+export const TEXT_ISSUES_TOTAL_FRAMES = 330;
+
 export const TextIssues: React.FC = () => {
   const frame = useCurrentFrame();
 
@@ -73,8 +83,11 @@ export const TextIssues: React.FC = () => {
   const lines = rawLines.flatMap((r) => splitByPunctuation(r));
 
   const fps = 30;
-  const lineDurSec = 3.0;
-  const overlapSec = 0.6;
+  const lineDurSec = 2.0;
+  const overlapSec = 0.4;
+  const fontSize = 70; // px used in render
+  const lineGap = 18; // marginTop between lines
+  const textBlockHeight = lines.length * fontSize + Math.max(0, lines.length - 1) * lineGap;
 
   const renderLine = (text: string, index: number) => {
     const startSec = index * (lineDurSec - overlapSec);
@@ -124,9 +137,79 @@ export const TextIssues: React.FC = () => {
 
   return (
     <AbsoluteFill style={{background: '#0b1220', alignItems: 'center', justifyContent: 'center'}}>
-      <div style={{width: '86%', maxWidth: 920}}>
+      {/* Play narration/audio from public/static/audio/speech.mp3 */}
+      {/* If audio is out of sync, adjust AUDIO_OFFSET_SEC to delay/advance audio start */}
+      {(() => {
+        const AUDIO_OFFSET_SEC = 0; // set negative to start earlier, positive to delay (seconds)
+        const AUDIO_OFFSET_FRAMES = Math.round(AUDIO_OFFSET_SEC * 30);
+        if (AUDIO_OFFSET_FRAMES === 0) {
+          return <Audio src={staticFile('static/audio/speech.mp3')} />;
+        }
+        return (
+          <Sequence from={AUDIO_OFFSET_FRAMES}>
+            <Audio src={staticFile('static/audio/speech.mp3')} />
+          </Sequence>
+        );
+      })()}
+      {/* Logo positioned above the text block (use computed textBlockHeight) */}
+      <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 3}}>
+        <div style={{position: 'absolute', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 900, height: 900, transform: `translateY(-${Math.round(textBlockHeight / 2 + 280)}px)`}}>
+          <div style={{position: 'absolute', width: 820, height: 820, borderRadius: 9999, background: 'radial-gradient(circle, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 35%, rgba(255,255,255,0.0) 60%)', filter: 'blur(18px)'}} />
+          <Img
+            src={staticFile('static/images/mercedes-benz-logo.png')}
+            style={{
+              width: 700,
+              height: 700,
+              opacity: 0.14,
+              objectFit: 'contain',
+              filter: 'grayscale(1)'
+            }}
+          />
+        </div>
+      </AbsoluteFill>
+
+      <div style={{width: '86%', maxWidth: 920, position: 'relative', zIndex: 1}}>
         {lines.map((l, idx) => renderLine(l, idx))}
       </div>
+
+      {/* App demo + cross-out sequence */}
+      {(() => {
+        const baseEnd = computeTextIssuesDuration();
+        const appStart = baseEnd + 8; // start shortly after text ends
+        const appFrame = frame - appStart;
+        const showApp = appFrame >= 0;
+        const imgScale = showApp
+          ? interpolate(appFrame, [0, 12, 36], [0.6, 1.08, 1], {extrapolateRight: 'clamp'})
+          : 0.6;
+        const imgOpacity = showApp ? interpolate(appFrame, [0, 8, 24], [0, 1, 1], {extrapolateRight: 'clamp'}) : 0;
+
+        const crossFrame = frame - (appStart + 36); // cross appears ~1.2s after app
+        const showCross = crossFrame >= 0;
+        const crossOpacity = showCross ? interpolate(crossFrame, [0, 6, 18], [0, 1, 1], {extrapolateRight: 'clamp'}) : 0;
+        const crossScale = showCross ? interpolate(crossFrame, [0, 6, 18], [0.6, 1.2, 1], {extrapolateRight: 'clamp'}) : 0.6;
+
+        if (!showApp) return null;
+
+        return (
+          <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', zIndex: 4}}>
+            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18}}>
+              <div style={{position: 'relative', width: 640, height: 1160, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <Img
+                  src={staticFile('static/images/benz-app.jpg')}
+                  style={{width: 600, height: 1120, objectFit: 'cover', borderRadius: 36, transform: `scale(${imgScale})`, opacity: imgOpacity, boxShadow: '0 40px 120px rgba(0,0,0,0.7)'}}
+                />
+
+                {/* Red X overlay */}
+                <svg width={600} height={1120} viewBox={`0 0 600 1120`} style={{position: 'absolute', left: 0, top: 0, opacity: crossOpacity, transform: `scale(${crossScale})`}}>
+                  <rect width="600" height="1120" fill="rgba(0,0,0,0.0)" />
+                  <line x1="80" y1="80" x2="520" y2="1040" stroke="#FF3B30" strokeWidth="56" strokeLinecap="round" strokeLinejoin="round" />
+                  <line x1="520" y1="80" x2="80" y2="1040" stroke="#FF3B30" strokeWidth="56" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+          </AbsoluteFill>
+        );
+      })()}
     </AbsoluteFill>
   );
 };
