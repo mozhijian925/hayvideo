@@ -1,0 +1,20 @@
+{
+  "images": [
+    "static/bg-image/环保清单/5.jpg",
+    "static/bg-image/环保清单/4.jpg",
+    "static/bg-image/环保清单/3.png",
+    "static/bg-image/环保清单/2.png"
+  ],
+  "bgMusic": "static/bg-music/embrace-364091.mp3",
+  "bgVideo": "static/bg-video/环保清单/huoche.mp4",
+  "speech": "static/audio/speech-end.mp3",
+  "perImageSec": 4,
+  "gapSec": 2,
+  "particleCount": 24
+  ,
+  "subtitles": [
+    {"text": "结尾语：携手环保", "startSec": 2, "durationSec": 4, "size": 52, "bg": "rgba(0,0,0,0.6)"}
+  ]
+  ,
+  "srt": "static/srt/speech.srt"
+}
