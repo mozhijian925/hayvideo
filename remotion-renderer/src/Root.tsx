@@ -8,6 +8,8 @@ import { NewCopyAnimation } from './NewCopyAnimation';
 import { MagicThreeAnimation } from './MagicThreeAnimation';
 import { MercedesSteps } from './MercedesSteps';
 import { CombinedAnimation } from './CombinedAnimation';
+import { EnvScrollTemplate } from './EnvScrollTemplate';
+import envconfig from './envconfig.json';
 
 // Each <Composition> is an entry in the sidebar!
 
@@ -110,6 +112,17 @@ export const RemotionRoot: React.FC = () => {
         fps={30}
         width={1080}
         height={1920}
+      />
+      <Composition
+        id="EnvScrollTemplate"
+        component={EnvScrollTemplate}
+        durationInFrames={30 * (5 + 3) * 5}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{
+          config: envconfig,
+        }}
       />
     </>
   );

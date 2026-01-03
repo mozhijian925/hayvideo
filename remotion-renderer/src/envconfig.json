@@ -1,0 +1,15 @@
+{
+  "images": [
+    "static/bg-image/环保清单/1.jpg",
+    "static/bg-image/环保清单/2.png",
+    "static/bg-image/环保清单/3.png",
+    "static/bg-image/环保清单/4.jpg",
+    "static/bg-image/环保清单/5.jpg"
+  ],
+  "bgMusic": "static/bg-music/bg1.mp3",
+  "bgVideo": "static/bg-video/环保清单/huoche.mp4",
+  "speech": "static/audio/speech.mp3",
+  "perImageSec": 5,
+  "gapSec": 3,
+  "particleCount": 40
+}
