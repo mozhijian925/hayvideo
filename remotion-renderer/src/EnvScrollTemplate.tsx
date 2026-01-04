@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from 'react';
 import {AbsoluteFill, Audio, staticFile, Img, Video, useCurrentFrame, interpolate, useVideoConfig} from 'remotion';
-import {SubtitleSequence, TypewriterCaption} from 'remotion-subtitle';
 
 type Props = {
   // folder relative to public/static/bg-image/环保清单
@@ -152,8 +151,8 @@ export const EnvScrollTemplate: React.FC<Props> = ({
   const currentIndex = Math.floor(frame / slotFrames);
 
   // subtitles prefer SRT when provided; otherwise fall back to provided subtitle array
-  const [srtSubtitles, setSrtSubtitles] = useState<any[] | undefined>(undefined);
-  const [subtitleSequences, setSubtitleSequences] = useState<React.ReactNode | null>(null);
+  const [srtSubtitles, setSrtSubtitles] = useState<any[]>([]);
+  const [subtitleError, setSubtitleError] = useState<string | null>(null);
   const {fps} = useVideoConfig();
 
   useEffect(() => {
@@ -182,52 +181,25 @@ export const EnvScrollTemplate: React.FC<Props> = ({
       return cues;
     };
 
-    const normalizedSrt = effective.srt
-      ? effective.srt.startsWith('http')
-        ? effective.srt
-        : effective.srt.startsWith('/static/')
-          ? effective.srt
-          : `/static/${effective.srt.replace(/^static\//, '')}`
-      : undefined;
+    const normalizedSrt = effective.srt ? staticFile(effective.srt.replace(/^\//, '')) : undefined;
 
     if (normalizedSrt && typeof window !== 'undefined') {
-      // prefer using remotion-subtitle library when available
-      try {
-        const seq = new SubtitleSequence(normalizedSrt);
-        seq.ready().then(() => {
-          const sequences = seq.getSequences(<TypewriterCaption style={{fontSize: '48px'}} />, fps || 30);
-          if (!cancelled) setSubtitleSequences(sequences as any);
-        }).catch((e) => {
-          console.warn('remotion-subtitle ready failed', e);
-          // fallback: fetch and parse manually
-          fetch(normalizedSrt, {cache: 'no-store'})
-            .then((r) => r.ok ? r.text() : Promise.reject(new Error('Failed to load srt')))
-            .then((text) => {
-              if (cancelled) return;
-              const cues = parseSrt(text);
-              setSrtSubtitles(cues);
-            })
-            .catch((e2) => {
-              console.warn('Failed to fetch/parse srt in EnvScrollTemplate', e2);
-            });
+      fetch(normalizedSrt, {cache: 'no-store'})
+        .then((r) => r.ok ? r.text() : Promise.reject(new Error('Failed to load srt')))
+        .then((text) => {
+          if (cancelled) return;
+          const cues = parseSrt(text);
+          setSrtSubtitles(cues);
+          setSubtitleError(null);
+        })
+        .catch((e2) => {
+          console.warn('Failed to fetch/parse srt in EnvScrollTemplate', e2);
+          if (!cancelled) setSubtitleError(String(e2));
         });
-      } catch (err) {
-        // failed to instantiate remotion-subtitle, fallback
-        if (!normalizedSrt) return () => { cancelled = true; };
-        fetch(normalizedSrt, {cache: 'no-store'})
-          .then((r) => r.ok ? r.text() : Promise.reject(new Error('Failed to load srt')))
-          .then((text) => {
-            if (cancelled) return;
-            const cues = parseSrt(text);
-            setSrtSubtitles(cues);
-          })
-          .catch((e) => {
-            console.warn('Failed to fetch/parse srt in EnvScrollTemplate', e);
-          });
-      }
     } else if (effective.subtitles && effective.subtitles.length > 0) {
       // no srt; fall back to provided subtitles
       setSrtSubtitles(effective.subtitles);
+      setSubtitleError(null);
     }
 
     return () => {
@@ -307,22 +279,61 @@ export const EnvScrollTemplate: React.FC<Props> = ({
       {/* Particle layer */}
       <ParticleLayer frame={frame} count={effective.particleCount} zIndex={15} />
 
-      {/* Subtitles: render remotion-subtitle sequences if available, otherwise a simple active overlay */}
-      {subtitleSequences ? <>{subtitleSequences}</> : null}
-
+      {/* Subtitles: typewriter + bounce */}
       {displaySubtitles && displaySubtitles.length > 0 && (() => {
         const active = displaySubtitles.filter((s) => {
           const startFrame = Math.floor((s.startSec ?? 0) * 30);
           const durFrames = Math.max(1, Math.floor((s.durationSec ?? 3) * 30));
           return frame >= startFrame && frame <= startFrame + durFrames;
         });
+
+        if (active.length === 0) return null;
+
         return (
-          <div style={{position: 'absolute', left: 0, right: 0, bottom: 60, zIndex: 3000, display: 'flex', justifyContent: 'center', pointerEvents: 'none'}}>
-            {active.length > 0 && (
-              <div style={{padding: '10px 18px', borderRadius: 10, background: 'rgba(0,0,0,0.65)', maxWidth: '88%'}}>
-                <div style={{color: '#fff', fontSize: 48, textAlign: 'center', lineHeight: 1.1, whiteSpace: 'pre-wrap'}}>{active.map(a => a.text).join('\n')}</div>
-              </div>
-            )}
+          <div style={{position: 'absolute', left: 0, right: 0, bottom: 60, zIndex: 3000, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, pointerEvents: 'none'}}>
+            {active.map((a, idx) => {
+              const startFrame = Math.floor((a.startSec ?? 0) * 30);
+              const durFrames = Math.max(1, Math.floor((a.durationSec ?? 3) * 30));
+              const localFrame = frame - startFrame;
+              const revealProgress = Math.min(1, Math.max(0, localFrame / Math.max(1, Math.floor(durFrames * 0.7))));
+              const charCount = a.text ? a.text.length : 0;
+              const visibleChars = Math.min(charCount, Math.max(0, Math.floor(charCount * revealProgress)));
+              const visibleText = (a.text ?? '').slice(0, visibleChars);
+              const t = Math.max(0, localFrame / Math.max(1, fps || 30));
+              const bounceY = 30 * Math.exp(-3 * t) * Math.cos(10 * t);
+              const opacity = interpolate(localFrame, [0, 6, durFrames - 10, durFrames], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+              const scale = interpolate(localFrame, [0, 10], [0.96, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+
+              return (
+                <div
+                  key={`${a.text}-${idx}-${startFrame}`}
+                  style={{
+                    padding: '12px 20px',
+                    borderRadius: 12,
+                    background: a.bg ?? 'rgba(0,0,0,0.68)',
+                    maxWidth: '88%',
+                    boxShadow: '0 10px 30px rgba(0,0,0,0.35)',
+                    transform: `translateY(${bounceY}px) scale(${scale})`,
+                    opacity,
+                  }}
+                >
+                  <div
+                    style={{
+                      color: a.color ?? '#fff',
+                      fontSize: a.size ?? 48,
+                      textAlign: 'center',
+                      lineHeight: 1.12,
+                      whiteSpace: 'pre-wrap',
+                      fontWeight: 600,
+                      textShadow: '0 2px 8px rgba(0,0,0,0.45)',
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    {visibleText}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
       })()}
@@ -334,6 +345,7 @@ export const EnvScrollTemplate: React.FC<Props> = ({
         <div>subtitles: {displaySubtitles ? displaySubtitles.length : 0}</div>
         <div>active: {displaySubtitles ? displaySubtitles.filter((s) => { const startFrame = Math.floor((s.startSec ?? 0) * 30); const durFrames = Math.max(1, Math.floor((s.durationSec ?? 3) * 30)); return frame >= startFrame && frame <= startFrame + durFrames; }).length : 0}</div>
         <div>source: {effective.subtitles ? 'config.subtitles' : (effective.srt ? 'srt' : 'none')}</div>
+        {subtitleError ? <div style={{color: '#ff9b9b'}}>srt error: {subtitleError}</div> : null}
       </div>
 
     </AbsoluteFill>
