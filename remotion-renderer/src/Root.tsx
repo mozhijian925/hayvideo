@@ -137,15 +137,6 @@ export const RemotionRoot: React.FC = () => {
           perImageSec: 4,
           gapSec: 2,
           particleCount: 24,
-          subtitles: [
-            {
-              text: "结尾语：携手环保",
-              startSec: 2,
-              durationSec: 4,
-              size: 52,
-              bg: "rgba(0,0,0,0.6)",
-            },
-          ],
           srt: "static/srt/speech.srt",
         }}
       />

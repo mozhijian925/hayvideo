@@ -12,11 +12,5 @@
   "perImageSec": 5,
   "gapSec": 3,
   "particleCount": 40
-  ,
-  "subtitles": [
-    {"text": "第一张：环保行动开始", "startSec": 1, "durationSec": 3, "size": 48},
-    {"text": "第二张：减少排放", "startSec": 7, "durationSec": 3, "size": 44}
-  ]
-  ,
   "srt": "static/srt/speech.srt"
 }

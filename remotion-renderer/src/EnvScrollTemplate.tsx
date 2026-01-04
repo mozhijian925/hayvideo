@@ -9,6 +9,15 @@ type Props = {
   bgVideo?: string;
   speech?: string;
   gapSec?: number;
+  subtitles?: {
+    text: string;
+    startSec: number;
+    durationSec: number;
+    size?: number;
+    color?: string;
+    bg?: string;
+  }[];
+  srt?: string;
   config?: {
     images?: string[];
     bgMusic?: string;
@@ -17,6 +26,8 @@ type Props = {
     perImageSec?: number;
     gapSec?: number;
     particleCount?: number;
+    subtitles?: Props['subtitles'];
+    srt?: string;
   };
 };
 
@@ -116,6 +127,8 @@ export const EnvScrollTemplate: React.FC<Props> = ({
   bgVideo,
   speech,
   gapSec = 3,
+  subtitles,
+  srt,
   config,
 }) => {
   // normalize values: prefer those in `config` if present, otherwise fall back to top-level props or defaults
@@ -127,8 +140,8 @@ export const EnvScrollTemplate: React.FC<Props> = ({
     perImageSec: config?.perImageSec ?? 5,
     gapSec: config?.gapSec ?? gapSec,
     particleCount: config?.particleCount ?? 40,
-    subtitles: config?.subtitles ?? undefined,
-    srt: config?.srt ?? undefined,
+    subtitles: config?.subtitles ?? subtitles ?? undefined,
+    srt: config?.srt ?? srt ?? undefined,
   };
 
   const perImageSec = effective.perImageSec; // seconds per image
@@ -138,8 +151,8 @@ export const EnvScrollTemplate: React.FC<Props> = ({
   const frame = useCurrentFrame();
   const currentIndex = Math.floor(frame / slotFrames);
 
-  // subtitles may come from effective.subtitles or from an external SRT file (effective.srt)
-  const [srtSubtitles, setSrtSubtitles] = useState<any[] | undefined>(effective.subtitles);
+  // subtitles prefer SRT when provided; otherwise fall back to provided subtitle array
+  const [srtSubtitles, setSrtSubtitles] = useState<any[] | undefined>(undefined);
   const [subtitleSequences, setSubtitleSequences] = useState<React.ReactNode | null>(null);
   const {fps} = useVideoConfig();
 
@@ -169,18 +182,25 @@ export const EnvScrollTemplate: React.FC<Props> = ({
       return cues;
     };
 
-    if ((!effective.subtitles || effective.subtitles.length === 0) && effective.srt && typeof window !== 'undefined') {
+    const normalizedSrt = effective.srt
+      ? effective.srt.startsWith('http')
+        ? effective.srt
+        : effective.srt.startsWith('/static/')
+          ? effective.srt
+          : `/static/${effective.srt.replace(/^static\//, '')}`
+      : undefined;
+
+    if (normalizedSrt && typeof window !== 'undefined') {
       // prefer using remotion-subtitle library when available
       try {
-        const seq = new SubtitleSequence(effective.srt.replace(/^static\//, ''));
+        const seq = new SubtitleSequence(normalizedSrt);
         seq.ready().then(() => {
           const sequences = seq.getSequences(<TypewriterCaption style={{fontSize: '48px'}} />, fps || 30);
           if (!cancelled) setSubtitleSequences(sequences as any);
         }).catch((e) => {
           console.warn('remotion-subtitle ready failed', e);
           // fallback: fetch and parse manually
-          const srtUrl = `/static/${effective.srt.replace(/^static\//, '')}`;
-          fetch(srtUrl, {cache: 'no-store'})
+          fetch(normalizedSrt, {cache: 'no-store'})
             .then((r) => r.ok ? r.text() : Promise.reject(new Error('Failed to load srt')))
             .then((text) => {
               if (cancelled) return;
@@ -193,8 +213,8 @@ export const EnvScrollTemplate: React.FC<Props> = ({
         });
       } catch (err) {
         // failed to instantiate remotion-subtitle, fallback
-        const srtUrl = `/static/${effective.srt.replace(/^static\//, '')}`;
-        fetch(srtUrl, {cache: 'no-store'})
+        if (!normalizedSrt) return () => { cancelled = true; };
+        fetch(normalizedSrt, {cache: 'no-store'})
           .then((r) => r.ok ? r.text() : Promise.reject(new Error('Failed to load srt')))
           .then((text) => {
             if (cancelled) return;
@@ -205,8 +225,8 @@ export const EnvScrollTemplate: React.FC<Props> = ({
             console.warn('Failed to fetch/parse srt in EnvScrollTemplate', e);
           });
       }
-    } else {
-      // if effective.subtitles present, use them
+    } else if (effective.subtitles && effective.subtitles.length > 0) {
+      // no srt; fall back to provided subtitles
       setSrtSubtitles(effective.subtitles);
     }
 
